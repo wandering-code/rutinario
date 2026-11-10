@@ -90,7 +90,7 @@ export function nuevaRutina({ weeks = 1, patron } = {}) {
     description: '',
     goal: '',
     weeks: Array.from({ length: weeks }, () => nuevaSemana(patron)),
-    volume: { mode: 'grupo', secondary: 0.5, ranges: { grupo: [10, 25], musculo: [10, 20] } },
+    volume: { mode: 'grupo', secondary: 0.5, ranges: { grupo: [10, 20], musculo: [10, 20] } },
   }
 }
 
@@ -114,7 +114,7 @@ export function normalizar(data) {
   const d = { ...nuevaRutina({ weeks: 0 }), ...(data || {}) }
   d.volume = { mode: 'grupo', secondary: 0.5, ...(data?.volume || {}) }
   // Un objetivo por modo: 10-20 series tiene sentido por músculo, no por grupo.
-  d.volume.ranges = { grupo: [10, 25], musculo: [10, 20], ...(d.volume.ranges || {}) }
+  d.volume.ranges = { grupo: [10, 20], musculo: [10, 20], ...(d.volume.ranges || {}) }
   delete d.volume.range
   if (!Array.isArray(d.weeks) || d.weeks.length === 0) d.weeks = [nuevaSemana()]
   d.weeks = d.weeks.map((w) => ({

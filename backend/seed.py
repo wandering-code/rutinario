@@ -26,13 +26,13 @@ TAXONOMIA = [
     {"id": "g-biceps", "name": "Bíceps", "muscles": [{"id": "biceps", "name": "Bíceps"}]},
     {"id": "g-triceps", "name": "Tríceps", "muscles": [{"id": "triceps", "name": "Tríceps"}]},
     {"id": "g-antebrazo", "name": "Antebrazo", "muscles": [{"id": "antebrazo", "name": "Antebrazo"}]},
-    {"id": "piernas", "name": "Piernas", "muscles": [
-        {"id": "cuadriceps", "name": "Cuádriceps"},
-        {"id": "isquios", "name": "Isquiotibiales"},
-        {"id": "gluteos", "name": "Glúteos"},
-        {"id": "aductores", "name": "Aductores"},
-        {"id": "gemelos", "name": "Gemelos"},
-    ]},
+    # Piernas, igual: cada músculo en su grupo (y aducción y abducción aparte).
+    {"id": "g-cuadriceps", "name": "Cuádriceps", "muscles": [{"id": "cuadriceps", "name": "Cuádriceps"}]},
+    {"id": "g-isquios", "name": "Isquiotibiales", "muscles": [{"id": "isquios", "name": "Isquiotibiales"}]},
+    {"id": "g-gluteos", "name": "Glúteos", "muscles": [{"id": "gluteos", "name": "Glúteos"}]},
+    {"id": "g-aductores", "name": "Aductores", "muscles": [{"id": "aductores", "name": "Aductores"}]},
+    {"id": "g-abductores", "name": "Abductores", "muscles": [{"id": "abductores", "name": "Abductores"}]},
+    {"id": "g-gemelos", "name": "Gemelos", "muscles": [{"id": "gemelos", "name": "Gemelos"}]},
     {"id": "core", "name": "Core", "muscles": [
         {"id": "abdomen", "name": "Abdomen"},
         {"id": "oblicuos", "name": "Oblicuos"},
@@ -95,7 +95,7 @@ EJERCICIOS = [
     ("Curl femoral sentado", "fuerza", "maquina", ["isquios"], []),
     ("Hip thrust", "fuerza", "barra", ["gluteos"], ["isquios"]),
     ("Patada de glúteo en polea", "fuerza", "polea", ["gluteos"], []),
-    ("Abductores en máquina", "fuerza", "maquina", ["gluteos"], []),
+    ("Abductores en máquina", "fuerza", "maquina", ["abductores"], []),
     ("Aductores en máquina", "fuerza", "maquina", ["aductores"], []),
     ("Elevación de gemelos de pie", "fuerza", "maquina", ["gemelos"], []),
     ("Elevación de gemelos sentado", "fuerza", "maquina", ["gemelos"], []),
@@ -122,17 +122,31 @@ EJERCICIOS = [
 ]
 
 
-def _separar_brazos(t: Taxonomia) -> None:
-    """Migración (2026-11-10): las bases creadas antes tienen el grupo "Brazos"
-    con bíceps, tríceps y antebrazo juntos. Cada músculo pasa a ser su propio
-    grupo, en el mismo sitio. Los ids de los músculos no cambian, así que los
-    ejercicios no se enteran. Si ya no existe "brazos", no hace nada."""
+def _separar_grupo(t: Taxonomia, gid: str) -> None:
+    """Migración: cada músculo del grupo `gid` pasa a ser su propio grupo, en el
+    mismo sitio. Los ids de los músculos no cambian, así que los ejercicios no
+    se enteran. Si el grupo ya no existe, no hace nada."""
     grupos = list(t.data or [])
-    i = next((i for i, g in enumerate(grupos) if g.get("id") == "brazos"), None)
+    i = next((i for i, g in enumerate(grupos) if g.get("id") == gid), None)
     if i is None:
         return
     nuevos = [{"id": f"g-{m['id']}", "name": m["name"], "muscles": [m]} for m in grupos[i]["muscles"]]
     t.data = grupos[:i] + nuevos + grupos[i + 1:]
+
+
+def _anadir_abductores(db: Session, t: Taxonomia) -> None:
+    """Migración: músculo "Abductores" (justo después de Aductores) y la máquina
+    de abductores pasa a contar para él en vez de para glúteos. Solo si la
+    máquina sigue como venía de serie: si la editaste a mano, no se toca."""
+    grupos = list(t.data or [])
+    if any(m["id"] == "abductores" for g in grupos for m in g["muscles"]):
+        return
+    i = next((i for i, g in enumerate(grupos) if g.get("id") == "g-aductores"), len(grupos) - 1)
+    grupos.insert(i + 1, {"id": "g-abductores", "name": "Abductores", "muscles": [{"id": "abductores", "name": "Abductores"}]})
+    t.data = grupos
+    for e in db.query(Ejercicio).filter(Ejercicio.name == "Abductores en máquina").all():
+        if e.primary == ["gluteos"]:
+            e.primary = ["abductores"]
 
 
 def sembrar(db: Session) -> None:
@@ -140,7 +154,10 @@ def sembrar(db: Session) -> None:
     if not t:
         db.add(Taxonomia(id=1, data=TAXONOMIA))
     else:
-        _separar_brazos(t)
+        # Migraciones del 2026-11-10: fuera "Brazos" y "Piernas".
+        _separar_grupo(t, "brazos")
+        _separar_grupo(t, "piernas")
+        _anadir_abductores(db, t)
     if not db.query(Ejercicio).first():
         for name, kind, equipment, primary, secondary in EJERCICIOS:
             db.add(Ejercicio(name=name, kind=kind, equipment=equipment, primary=primary, secondary=secondary))
