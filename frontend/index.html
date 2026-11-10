@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover: sin esto env(safe-area-inset-*) vale 0 y la barra de
+         gestos del iPhone se come el borde inferior al abrir desde el icono.
+         interactive-widget: al abrir el teclado el viewport se encoge en vez de
+         taparse. Lo mismo que en Puchi. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="theme-color" content="#f3f1ec" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121311" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Rutinario" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="description" content="Diseña rutinas de entrenamiento y expórtalas." />
+    <title>Rutinario</title>
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // El tema se aplica antes del primer pintado: sin fogonazo claro al abrir en oscuro.
+      try {
+        var t = localStorage.getItem('rutinario.tema') || 'sistema'
+        var oscuro = t === 'oscuro' || (t === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.tema = oscuro ? 'oscuro' : 'claro'
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

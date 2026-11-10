@@ -1,0 +1,14 @@
+# Se carga EXPLÍCITO en el mini PC (solo tiene docker-compose v1, con guion):
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+# Compose COMBINA listas de `ports` entre -f, por eso los de dev viven aparte.
+services:
+  backend:
+    # Sin --reload en producción.
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      # Solo loopback: nginx (en el host) es quien habla con el backend.
+      # 8007 sale de la tabla de puertos de dev-standards/CLAUDE.md.
+      - "127.0.0.1:8007:8000"
+
+  # db: SIN `ports` a propósito. Nadie fuera del contenedor backend necesita
+  # hablar directo con Postgres en producción.

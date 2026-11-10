@@ -1,0 +1,10 @@
+# Se carga SOLO en local, automáticamente, con `docker compose up` sin -f.
+# Puertos de dev elegidos para no chocar con otros proyectos levantados a la
+# vez en el Mac (8001/8004/8005 y 5432-5437 ya estaban ocupados).
+services:
+  backend:
+    ports:
+      - "8007:8000"
+  db:
+    ports:
+      - "5438:5432"

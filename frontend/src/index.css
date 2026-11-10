@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+/* ── Tipografía ──────────────────────────────────────────────────────────
+   Las mismas que Puchi, alojadas aquí y no en Google Fonts: en una PWA
+   instalada una fuente de un tercero no carga sin cobertura, y el service
+   worker ya guarda estos .woff2. */
+@font-face {
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/public-sans-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Public Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/public-sans-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ── Tokens ──────────────────────────────────────────────────────────────
+   Todo el color sale de aquí. Ningún componente lleva un hex suelto: cambiar
+   la paleta es editar este bloque. Piedra cálida + verde bosque, con un color
+   propio por tipo de día (fuerza, cardio, movilidad…). */
+@theme {
+  --color-bg:        #f3f1ec;
+  --color-surface:   #fffefb;
+  --color-surface-2: #e9e5dd;
+  --color-line:      #ddd8ce;
+  --color-ink:       #1c1d1a;
+  --color-ink-dim:   #66645d;
+  --color-ink-mute:  #8a867d;
+  --color-accent:    #1f5c4a;
+  --color-accent-soft: rgba(31,92,74,0.10);
+  --color-accent-line: rgba(31,92,74,0.32);
+  --color-on-accent: #f8f7f3;
+  --color-danger:    #b3412a;
+  --color-danger-soft: rgba(179,65,42,0.10);
+  --color-ok:        #3d7a4f;
+  --color-warn:      #b7791f;
+
+  /* Tipos de día */
+  --color-t-fuerza:    #1f5c4a;
+  --color-t-cardio:    #cf5a37;
+  --color-t-movilidad: #6b58a8;
+  --color-t-deporte:   #b8801b;
+  --color-t-activo:    #6f8f5c;
+  --color-t-descanso:  #9a958b;
+
+  --color-sombra: 40 36 28;
+  --color-velo: rgba(28,29,26,0.28);
+
+  --radius-xl2: 1.25rem;
+  --radius-xl3: 1.75rem;
+
+  --font-display: 'Public Sans', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Una sola curva para todo lo que se mueve. */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root[data-tema="oscuro"] {
+  --color-bg:        #121311;
+  --color-surface:   #1c1e1b;
+  --color-surface-2: #2a2d29;
+  --color-line:      #353833;
+  --color-ink:       #eeede8;
+  --color-ink-dim:   #aeaba2;
+  --color-ink-mute:  #858279;
+  --color-accent:    #5fbf9c;
+  --color-accent-soft: rgba(95,191,156,0.14);
+  --color-accent-line: rgba(95,191,156,0.40);
+  --color-on-accent: #0e1a15;
+  --color-danger:    #ea7a5f;
+  --color-danger-soft: rgba(234,122,95,0.14);
+  --color-ok:        #6fbf86;
+  --color-warn:      #e0a64a;
+
+  --color-t-fuerza:    #5fbf9c;
+  --color-t-cardio:    #f08a66;
+  --color-t-movilidad: #a492e0;
+  --color-t-deporte:   #e3b04f;
+  --color-t-activo:    #9cc285;
+  --color-t-descanso:  #8c887f;
+
+  --color-sombra: 0 0 0;
+  --color-velo: rgba(0,0,0,0.55);
+  color-scheme: dark;
+}
+:root, :root[data-tema="claro"] { color-scheme: light; }
+
+@layer base {
+  html, body {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #root { width: 100%; height: 100%; }
+
+  @media (max-width: 768px) {
+    input, textarea, select { font-size: 16px !important; }
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-ink) 20%, transparent) transparent;
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+  ::-webkit-scrollbar-thumb { border-radius: 999px; background: color-mix(in srgb, var(--color-ink) 20%, transparent); }
+
+  button { cursor: pointer; }
+  button:disabled { cursor: default; }
+
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@utility sombra-1 { box-shadow: 0 1px 2px rgb(var(--color-sombra) / 0.06), 0 1px 1px rgb(var(--color-sombra) / 0.04); }
+@utility sombra-2 { box-shadow: 0 8px 24px -8px rgb(var(--color-sombra) / 0.16), 0 2px 6px rgb(var(--color-sombra) / 0.06); }
+@utility sombra-3 { box-shadow: 0 24px 60px -16px rgb(var(--color-sombra) / 0.30), 0 6px 18px rgb(var(--color-sombra) / 0.10); }
+@utility tabular { font-variant-numeric: tabular-nums; }
+@utility sin-barra {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+@utility pt-segura { padding-top: env(safe-area-inset-top); }
+@utility pb-segura { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Campos: una sola definición para toda la app. */
+@utility campo {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.925rem;
+  color: var(--color-ink);
+  transition: border-color .2s var(--ease-out-soft), box-shadow .2s var(--ease-out-soft);
+  &::placeholder { color: var(--color-ink-mute); }
+  &:focus { outline: none; border-color: var(--color-accent-line); box-shadow: 0 0 0 4px var(--color-accent-soft); }
+}
+
+/* Cambio de tema: un círculo que se abre desde el botón (View Transitions). */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+/* ── Impresión / PDF ─────────────────────────────────────────────────────
+   Al imprimir solo se ve la hoja de exportación (#hoja-impresion). */
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  html, body { position: static; overflow: visible; height: auto; background: #fff !important; }
+  #root { display: none !important; }
+  #hoja-impresion { display: block !important; }
+}
+#hoja-impresion { display: none; }
