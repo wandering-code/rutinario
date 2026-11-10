@@ -21,11 +21,11 @@ TAXONOMIA = [
         {"id": "delt-lat", "name": "Deltoide lateral"},
         {"id": "delt-post", "name": "Deltoide posterior"},
     ]},
-    {"id": "brazos", "name": "Brazos", "muscles": [
-        {"id": "biceps", "name": "Bíceps"},
-        {"id": "triceps", "name": "Tríceps"},
-        {"id": "antebrazo", "name": "Antebrazo"},
-    ]},
+    # Bíceps, tríceps y antebrazo van cada uno en su grupo: juntarlos en
+    # "Brazos" sumaba series de músculos opuestos en el contador por grupo.
+    {"id": "g-biceps", "name": "Bíceps", "muscles": [{"id": "biceps", "name": "Bíceps"}]},
+    {"id": "g-triceps", "name": "Tríceps", "muscles": [{"id": "triceps", "name": "Tríceps"}]},
+    {"id": "g-antebrazo", "name": "Antebrazo", "muscles": [{"id": "antebrazo", "name": "Antebrazo"}]},
     {"id": "piernas", "name": "Piernas", "muscles": [
         {"id": "cuadriceps", "name": "Cuádriceps"},
         {"id": "isquios", "name": "Isquiotibiales"},
@@ -122,9 +122,25 @@ EJERCICIOS = [
 ]
 
 
+def _separar_brazos(t: Taxonomia) -> None:
+    """Migración (2026-11-10): las bases creadas antes tienen el grupo "Brazos"
+    con bíceps, tríceps y antebrazo juntos. Cada músculo pasa a ser su propio
+    grupo, en el mismo sitio. Los ids de los músculos no cambian, así que los
+    ejercicios no se enteran. Si ya no existe "brazos", no hace nada."""
+    grupos = list(t.data or [])
+    i = next((i for i, g in enumerate(grupos) if g.get("id") == "brazos"), None)
+    if i is None:
+        return
+    nuevos = [{"id": f"g-{m['id']}", "name": m["name"], "muscles": [m]} for m in grupos[i]["muscles"]]
+    t.data = grupos[:i] + nuevos + grupos[i + 1:]
+
+
 def sembrar(db: Session) -> None:
-    if not db.query(Taxonomia).first():
+    t = db.query(Taxonomia).first()
+    if not t:
         db.add(Taxonomia(id=1, data=TAXONOMIA))
+    else:
+        _separar_brazos(t)
     if not db.query(Ejercicio).first():
         for name, kind, equipment, primary, secondary in EJERCICIOS:
             db.add(Ejercicio(name=name, kind=kind, equipment=equipment, primary=primary, secondary=secondary))

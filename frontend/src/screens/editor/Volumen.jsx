@@ -157,7 +157,7 @@ export default function Volumen({ data, editar }) {
           </div>
           {grupos ? grupos.map((g) => (
             <div key={g.id} className="pt-3">
-              <div className="text-[12px] font-semibold text-ink-dim">{g.name}</div>
+              {!(g.filas.length === 1 && g.filas[0].name === g.name) && <div className="text-[12px] font-semibold text-ink-dim">{g.name}</div>}
               {g.filas.map((f) => <Fila key={f.id} f={f} rango={rango} escala={escala} semanas={n} abierta={abierta === f.id} onToggle={() => setAbierta(abierta === f.id ? null : f.id)} />)}
             </div>
           )) : filas.map((f) => (

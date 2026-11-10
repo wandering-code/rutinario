@@ -20,23 +20,31 @@ function SelectorMusculos({ primary, secondary, onChange }) {
     else if (e === 'p') s.push(id)
     onChange(p, s)
   }
+  const chip = (m) => {
+    const e = estado(m.id)
+    return (
+      <motion.button key={m.id} whileTap={{ scale: 0.94 }} onClick={() => rotar(m.id)}
+        className={`h-8 px-3 rounded-full text-[13px] font-medium border transition-all duration-200
+          ${e === 'p' ? 'bg-accent text-on-accent border-transparent' : e === 's' ? 'bg-accent-soft text-accent border-accent-line' : 'border-line text-ink-dim hover:text-ink'}`}>
+        {m.name}{e === 's' && <span className="ml-1 opacity-70 text-[11px]">½</span>}
+      </motion.button>
+    )
+  }
+  // Los grupos de un solo músculo con su mismo nombre (Bíceps, Tríceps…) no
+  // llevan título: los seguidos se juntan en una sola fila.
+  const bloques = []
+  for (const g of taxonomia) {
+    const solo = g.muscles.length === 1 && g.muscles[0].name === g.name
+    const ultimo = bloques[bloques.length - 1]
+    if (solo && ultimo?.sueltos) ultimo.muscles.push(...g.muscles)
+    else bloques.push({ id: g.id, name: solo ? null : g.name, muscles: [...g.muscles], sueltos: solo })
+  }
   return (
     <div className="space-y-3">
-      {taxonomia.map((g) => (
+      {bloques.map((g) => (
         <div key={g.id}>
-          <div className="text-[12px] font-medium text-ink-mute mb-1.5">{g.name}</div>
-          <div className="flex flex-wrap gap-1.5">
-            {g.muscles.map((m) => {
-              const e = estado(m.id)
-              return (
-                <motion.button key={m.id} whileTap={{ scale: 0.94 }} onClick={() => rotar(m.id)}
-                  className={`h-8 px-3 rounded-full text-[13px] font-medium border transition-all duration-200
-                    ${e === 'p' ? 'bg-accent text-on-accent border-transparent' : e === 's' ? 'bg-accent-soft text-accent border-accent-line' : 'border-line text-ink-dim hover:text-ink'}`}>
-                  {m.name}{e === 's' && <span className="ml-1 opacity-70 text-[11px]">½</span>}
-                </motion.button>
-              )
-            })}
-          </div>
+          {g.name && <div className="text-[12px] font-medium text-ink-mute mb-1.5">{g.name}</div>}
+          <div className="flex flex-wrap gap-1.5">{g.muscles.map(chip)}</div>
         </div>
       ))}
       <p className="text-[12px] text-ink-mute">Un toque: principal (cuenta 1 serie). Dos: secundario (cuenta ½, ajustable). Tres: quitar.</p>
