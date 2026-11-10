@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, Up
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageOps
 from pydantic import BaseModel, Field
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 import auth
@@ -183,11 +184,36 @@ def update_exercise(eid: int, body: EjercicioIn, db: Session = Depends(get_db), 
     antes = set(e.images)
     data = body.model_dump()
     data["images"] = _imagenes_validas(data["images"])
+    renombrado = e.name != data["name"]
     for k, v in data.items():
         setattr(e, k, v)
+    if renombrado:
+        _renombrar_en_rutinas(db, eid, data["name"])
     db.commit()
     _limpiar_huerfanas(db, antes - set(e.images))
     return _ejercicio_dict(e)
+
+
+def _renombrar_en_rutinas(db: Session, eid: int, nombre: str) -> None:
+    """Las rutinas guardan copia del nombre de cada ejercicio (para no romperse
+    si se borra de la biblioteca), así que al renombrarlo hay que propagarlo.
+
+    Sin subir `version` ni `updated_at`: no es una edición de la rutina, y
+    subir la versión haría saltar el aviso de conflicto en un editor abierto
+    (que ya se sincroniza solo con la biblioteca)."""
+    for r in db.query(Rutina).all():
+        cambiado = False
+        for w in (r.data or {}).get("weeks", []):
+            for d in w.get("days", []):
+                for en in d.get("entries", []):
+                    if en.get("exerciseId") == eid and en.get("name") != nombre:
+                        en["name"] = nombre
+                        cambiado = True
+        if cambiado:
+            db.execute(
+                update(Rutina).where(Rutina.id == r.id)
+                .values(data=r.data, updated_at=Rutina.updated_at)
+            )
 
 
 @app.delete("/exercises/{eid}")

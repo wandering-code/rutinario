@@ -9,7 +9,8 @@ import { useRutina } from './useRutina'
 import Plan from './Plan'
 import Volumen from './Volumen'
 import Exportar from './Exportar'
-import { clonar, nombreSemana, nuevaSemana, seriesDia, textoRecuento } from '../../domain/rutina'
+import { useDatos } from '../../platform/datos'
+import { clonar, nombreSemana, sincronizarNombres, nuevaSemana, seriesDia, textoRecuento } from '../../domain/rutina'
 
 const VISTAS = [
   { id: 'plan', name: 'Semana', icono: 'calendar' },
@@ -80,7 +81,14 @@ export default function Editor() {
   const [renombrar, setRenombrar] = useState(null)
   const { avisar, confirmar } = useAvisos()
   const r = useRutina(id)
-  const { doc, editar, deshacer, rehacer } = r
+  const { doc, editar, ajustar, deshacer, rehacer } = r
+  const { porId } = useDatos()
+
+  // Si un ejercicio se renombra en la biblioteca (desde aquí mismo o desde
+  // otra pantalla), la rutina abierta lo refleja al momento.
+  useEffect(() => {
+    if (doc && porId.size) ajustar((d) => sincronizarNombres(d.data, porId))
+  }, [doc, porId, ajustar])
 
   useEffect(() => {
     const tecla = (e) => {

@@ -75,18 +75,32 @@ export function Segmentado({ opciones, valor, onChange, className = '', tam = 'm
   )
 }
 
+const HOJAS_ABIERTAS = []
+
 // ── Hoja: abajo en el móvil (se cierra arrastrando), panel en escritorio ─
 
 export function Hoja({ abierta, onClose, titulo, children, pie, ancho = 520, lado = 'centro', cabecera }) {
   const escritorio = useEscritorio()
   const controles = useDragControls()
 
+  // Con dos hojas apiladas (p. ej. la ficha del ejercicio sobre la de la
+  // rutina), Escape cierra solo la de arriba.
+  const yo = useId()
+  const cerrar = useRef(onClose)
+  cerrar.current = onClose
   useEffect(() => {
     if (!abierta) return
-    const tecla = (e) => e.key === 'Escape' && onClose()
+    HOJAS_ABIERTAS.push(yo)
+    const tecla = (e) => {
+      if (e.key === 'Escape' && HOJAS_ABIERTAS[HOJAS_ABIERTAS.length - 1] === yo) cerrar.current()
+    }
     window.addEventListener('keydown', tecla)
-    return () => window.removeEventListener('keydown', tecla)
-  }, [abierta, onClose])
+    return () => {
+      window.removeEventListener('keydown', tecla)
+      const i = HOJAS_ABIERTAS.lastIndexOf(yo)
+      if (i >= 0) HOJAS_ABIERTAS.splice(i, 1)
+    }
+  }, [abierta, yo])
 
   const derecha = escritorio && lado === 'derecha'
 

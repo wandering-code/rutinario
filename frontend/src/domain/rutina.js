@@ -137,6 +137,17 @@ export function normalizar(data) {
   return d
 }
 
+// Nombres al día con la biblioteca: si un ejercicio se renombra, sus copias en
+// la rutina también. Devuelve true si ha cambiado algo (modifica `data`).
+export function sincronizarNombres(data, porId) {
+  let cambiado = false
+  for (const w of data.weeks) for (const d of w.days) for (const e of d.entries) {
+    const nombre = porId.get(e.exerciseId)?.name
+    if (nombre && nombre !== e.name) { e.name = nombre; cambiado = true }
+  }
+  return cambiado
+}
+
 // ── Formato ─────────────────────────────────────────────────────────────
 
 export function formatoDescanso(seg) {

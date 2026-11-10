@@ -4,6 +4,7 @@ import { Icon } from '../../ui/icons'
 import { Boton, BotonIcono, Contador, Etiqueta, Hoja, Menu, Segmentado, SUAVE } from '../../ui/piezas'
 import { useDatos } from '../../platform/datos'
 import { Interruptor } from '../../ui/Interruptor'
+import { FormularioEjercicio } from '../ejercicios/FormularioEjercicio'
 import { DIAS_CORTO, TIPOS_SERIE, TIPO, formatoDescanso, nuevaSerie, resumenEntrada } from '../../domain/rutina'
 
 const DESCANSOS = [30, 45, 60, 90, 120, 180, 240]
@@ -156,6 +157,7 @@ export default function EditorEntrada({ abierta, entrada, esUltima, onClose, onC
   // Se guarda la última entrada vista para que el contenido no desaparezca
   // de golpe mientras la hoja hace su animación de salida.
   const [ultima, setUltima] = useState(entrada)
+  const [editandoBase, setEditandoBase] = useState(false)
   if (entrada && entrada !== ultima) setUltima(entrada)
   const e = entrada || ultima
   if (!e) return <Hoja abierta={false} onClose={onClose} />
@@ -171,19 +173,38 @@ export default function EditorEntrada({ abierta, entrada, esUltima, onClose, onC
       ) : (
         <div className="w-12 h-12 rounded-2xl bg-surface-2/70 grid place-items-center text-ink-mute"><Icon name={ej?.kind === 'cardio' ? 'flame' : 'dumbbell'} size={22} /></div>
       )}
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <h2 className="font-display text-lg font-semibold tracking-tight leading-tight truncate">{e.name}</h2>
         <p className="text-[12.5px] text-ink-dim truncate tabular">{resumenEntrada(e)}</p>
       </div>
+      <BotonIcono icono="pencil" label={ej ? 'Editar el ejercicio (nombre, fotos, músculos…)' : 'Añadir a la biblioteca'} onClick={() => setEditandoBase(true)} />
     </div>
   )
 
+  // Editar la ficha del ejercicio en la biblioteca, encima de esta hoja. Si
+  // ya no existe en la biblioteca (se borró), se vuelve a crear y se enlaza.
+  const formularioBase = (
+    <FormularioEjercicio
+      abierto={abierta && editandoBase}
+      inicial={ej || { name: e.name, kind: e.mode === 'time' ? 'cardio' : 'fuerza' }}
+      onClose={() => setEditandoBase(false)}
+      onGuardado={(g) => {
+        setEditandoBase(false)
+        if (!ej) onChange((x) => { x.exerciseId = g.id; x.name = g.name })
+      }}
+      onBorrado={() => setEditandoBase(false)}
+    />
+  )
+
   return (
+    <>
+    {formularioBase}
     <Hoja abierta={abierta} onClose={onClose} cabecera={cabecera} ancho={560} lado="derecha"
       pie={<>
         <Menu alinear="izquierda" boton={<BotonIcono icono="more" label="Más acciones" />}
           items={[
-            { label: 'Cambiar de ejercicio', icono: 'swap', onClick: onCambiarEjercicio },
+            { label: ej ? 'Editar el ejercicio' : 'Añadir a la biblioteca', icono: 'pencil', onClick: () => setEditandoBase(true) },
+            { label: 'Cambiar por otro ejercicio', icono: 'swap', onClick: onCambiarEjercicio },
             { label: 'Duplicar', icono: 'copy', onClick: onDuplicar },
             '-',
             ...dias.map((d, i) => ({ label: `Mover al ${DIAS_CORTO[i].toLowerCase()}${d.title ? ` · ${d.title}` : ''}`, icono: 'arrowR', disabled: d.id === diaActual, onClick: () => onMover(d.id) })),
@@ -281,5 +302,6 @@ export default function EditorEntrada({ abierta, entrada, esUltima, onClose, onC
         )}
       </div>
     </Hoja>
+    </>
   )
 }

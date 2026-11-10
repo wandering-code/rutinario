@@ -55,6 +55,26 @@ export function useRutina(id) {
     setGuardado((g) => (g === 'conflicto' ? g : 'pendiente'))
   }, [])
 
+  // Cambio que no es del usuario (p. ej. un nombre que viene de la
+  // biblioteca): se guarda, pero no crea un paso de deshacer. Se aplica
+  // también al historial, para que deshacer no devuelva el nombre viejo.
+  const ajustar = useCallback((fn) => {
+    const actual = docRef.current
+    if (!actual) return
+    const copia = structuredClone(actual)
+    if (!fn(copia)) return
+    for (const pila of [pasado.current, futuro.current]) {
+      for (let i = 0; i < pila.length; i++) {
+        const c = structuredClone(pila[i])
+        fn(c)
+        pila[i] = c
+      }
+    }
+    sucio.current = true
+    poner(copia)
+    setGuardado((g) => (g === 'conflicto' ? g : 'pendiente'))
+  }, [])
+
   const deshacer = useCallback(() => {
     if (!pasado.current.length) return
     futuro.current.push(docRef.current)
@@ -124,7 +144,7 @@ export function useRutina(id) {
   }, [id, doc, guardar])
 
   return {
-    ...estado, doc, editar, deshacer, rehacer, guardado, resolverConflicto,
+    ...estado, doc, editar, ajustar, deshacer, rehacer, guardado, resolverConflicto,
     puedeDeshacer: pasado.current.length > 0, puedeRehacer: futuro.current.length > 0,
   }
 }
