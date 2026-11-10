@@ -34,6 +34,8 @@ Igual que Puchi:
   Router 7 + PWA (`vite-plugin-pwa`). dnd-kit para arrastrar, ExcelJS y html-to-image para
   exportar (se cargan solo al exportar). Se compila a `dist/` y lo sirve nginx; no lleva
   Dockerfile.
+  **Vite 7, no 8**: Vite 8 compila con Rolldown, cuyo binario nativo muere con «Illegal
+  instruction» en el Pentium G4400T del mini PC. Mismas versiones que Puchi.
 - `backend/` — FastAPI + SQLAlchemy + Postgres 16, en Docker. Las imágenes se guardan en
   `backend/uploads/` (convertidas a WebP, máx. 1600 px).
 
