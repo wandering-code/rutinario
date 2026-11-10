@@ -1,4 +1,5 @@
 import io
+import mimetypes
 import os
 import uuid
 from pathlib import Path
@@ -14,6 +15,10 @@ import auth
 from database import Base, engine, esperar_a_postgres, get_db
 from models import Ejercicio, Rutina, Taxonomia
 from seed import sembrar
+
+# La imagen python:3.12-slim no trae /etc/mime.types y Python 3.12 no conoce
+# .webp: sin esto las fotos se sirven como text/plain.
+mimetypes.add_type("image/webp", ".webp")
 
 UPLOADS = Path(os.getenv("UPLOADS_DIR", Path(__file__).parent / "uploads"))
 UPLOADS.mkdir(parents=True, exist_ok=True)
