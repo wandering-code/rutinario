@@ -51,7 +51,7 @@ function Tarjeta({ r, onAbrir, onDuplicar, onArchivar, onBorrar }) {
       transition={{ duration: 0.35, ease: SUAVE }}
       whileHover={{ y: -2 }}
       onClick={onAbrir}
-      className="group relative cursor-pointer rounded-xl3 bg-surface border border-line/80 p-5 sombra-1 hover:sombra-2 transition-shadow duration-300"
+      className="group relative min-w-0 cursor-pointer rounded-xl3 bg-surface border border-line/80 p-5 sombra-1 hover:sombra-2 transition-shadow duration-300"
     >
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
@@ -74,11 +74,11 @@ function Tarjeta({ r, onAbrir, onDuplicar, onArchivar, onBorrar }) {
       <div className="mt-5"><TiraSemana semana={s0} /></div>
       <div className="mt-4 flex items-center gap-3 text-[12px] text-ink-mute">
         {data.weeks.length > 1 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft text-accent px-2 py-0.5 font-medium">
+          <span className="shrink-0 whitespace-nowrap inline-flex items-center gap-1 rounded-full bg-accent-soft text-accent px-2 py-0.5 font-medium">
             <Icon name="refresh" size={12} /> {data.weeks.length} semanas
           </span>
         )}
-        <span className="truncate">{textoRecuento(s0)}</span>
+        <span className="truncate min-w-0">{textoRecuento(s0)}</span>
         <span className="ml-auto whitespace-nowrap">{haceCuanto(r.updated_at)}</span>
       </div>
     </motion.article>
@@ -233,7 +233,7 @@ export default function Rutinas() {
       <Cabecera titulo="Rutinas" subtitulo={rutinas ? `${activas.length} ${activas.length === 1 ? 'rutina' : 'rutinas'}` : ' '}>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={importar} />
         <BotonIcono icono="upload" label="Importar JSON" onClick={() => fileRef.current?.click()} />
-        <Boton variante="primario" icono="plus" onClick={() => setNueva(true)} className="hidden sm:inline-flex">Nueva rutina</Boton>
+        <span className="hidden sm:contents"><Boton variante="primario" icono="plus" onClick={() => setNueva(true)}>Nueva rutina</Boton></span>
       </Cabecera>
 
       <div className="px-5 lg:px-10 pb-32">
@@ -245,7 +245,7 @@ export default function Rutinas() {
         )}
 
         {rutinas === null ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2].map((i) => <div key={i} className="h-44 rounded-xl3 bg-surface-2/50 animate-pulse" />)}
           </div>
         ) : rutinas.length === 0 ? (
@@ -254,7 +254,7 @@ export default function Rutinas() {
           </Vacio>
         ) : (
           <>
-            <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <motion.div layout className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               <AnimatePresence>
                 {activas.map((r) => (
                   <Tarjeta key={r.id} r={r} onAbrir={() => navigate(`/rutina/${r.id}`)}
@@ -271,7 +271,7 @@ export default function Rutinas() {
                 <AnimatePresence initial={false}>
                   {verArchivadas && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: SUAVE }} className="overflow-hidden">
-                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 pt-4 opacity-75">
+                      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 pt-4 opacity-75">
                         {archivadas.map((r) => (
                           <Tarjeta key={r.id} r={r} onAbrir={() => navigate(`/rutina/${r.id}`)}
                             onDuplicar={() => duplicar(r)} onArchivar={() => archivar(r)} onBorrar={() => borrar(r)} />
