@@ -85,12 +85,21 @@ export function nuevaSemana(patron = ['fuerza', 'fuerza', 'descanso', 'fuerza', 
   return { id: uid(), label: '', days: patron.map((t) => nuevoDia(t)) }
 }
 
+// Volumen semanal recomendado para hipertrofia: 10-20 series efectivas por
+// músculo, con los secundarios a ½. Fuentes en VOLUMEN_FUENTES.
+export const VOLUMEN_RECOMENDADO = { rango: [10, 20], secundarios: 0.5 }
+export const VOLUMEN_FUENTES = [
+  { cita: 'Schoenfeld et al. 2017', que: '10 o más series por músculo y semana: más crecimiento que con menos', url: 'https://doi.org/10.1080/02640414.2016.1210197' },
+  { cita: 'Baz-Valle et al. 2022', que: '12-20 series por músculo y semana en gente entrenada', url: 'https://pubmed.ncbi.nlm.nih.gov/35291645/' },
+  { cita: 'Pelland et al. 2026', que: 'contar los secundarios como ½ serie; más volumen sigue sumando, cada vez menos', url: 'https://doi.org/10.1007/s40279-025-02344-w' },
+]
+
 export function nuevaRutina({ weeks = 1, patron } = {}) {
   return {
     description: '',
     goal: '',
     weeks: Array.from({ length: weeks }, () => nuevaSemana(patron)),
-    volume: { mode: 'grupo', secondary: 0.5, ranges: { grupo: [10, 20], musculo: [10, 20] } },
+    volume: { mode: 'grupo', secondary: VOLUMEN_RECOMENDADO.secundarios, ranges: { grupo: [...VOLUMEN_RECOMENDADO.rango], musculo: [...VOLUMEN_RECOMENDADO.rango] } },
   }
 }
 
@@ -112,9 +121,9 @@ export function clonar(obj) {
 // JSON importado: esto rellena lo que falte sin perder nada.
 export function normalizar(data) {
   const d = { ...nuevaRutina({ weeks: 0 }), ...(data || {}) }
-  d.volume = { mode: 'grupo', secondary: 0.5, ...(data?.volume || {}) }
+  d.volume = { mode: 'grupo', secondary: VOLUMEN_RECOMENDADO.secundarios, ...(data?.volume || {}) }
   // Un objetivo por modo: 10-20 series tiene sentido por músculo, no por grupo.
-  d.volume.ranges = { grupo: [10, 20], musculo: [10, 20], ...(d.volume.ranges || {}) }
+  d.volume.ranges = { grupo: [...VOLUMEN_RECOMENDADO.rango], musculo: [...VOLUMEN_RECOMENDADO.rango], ...(d.volume.ranges || {}) }
   delete d.volume.range
   if (!Array.isArray(d.weeks) || d.weeks.length === 0) d.weeks = [nuevaSemana()]
   d.weeks = d.weeks.map((w) => ({

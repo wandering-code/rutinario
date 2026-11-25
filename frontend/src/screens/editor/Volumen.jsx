@@ -4,7 +4,7 @@ import { Icon } from '../../ui/icons'
 import { Segmentado, SUAVE, Etiqueta } from '../../ui/piezas'
 import { useDatos } from '../../platform/datos'
 import { calcularVolumen, redondear } from '../../domain/volumen'
-import { TIPO, TIPOS_DIA, duracionDia, esEntreno, formatoMinutos, nombreSemana, recuentoTipos, seriesDia } from '../../domain/rutina'
+import { TIPO, TIPOS_DIA, VOLUMEN_FUENTES, VOLUMEN_RECOMENDADO, duracionDia, esEntreno, formatoMinutos, nombreSemana, recuentoTipos, seriesDia } from '../../domain/rutina'
 
 function color(v, [min, max]) {
   if (!v) return 'var(--color-line)'
@@ -97,6 +97,11 @@ export default function Volumen({ data, editar }) {
 
   const setCfg = (k, v) => editar((d) => { d.volume[k] = v })
   const setRango = (r) => editar((d) => { d.volume.ranges[d.volume.mode] = r }, 'rango')
+  const esRecomendado = rango[0] === VOLUMEN_RECOMENDADO.rango[0] && rango[1] === VOLUMEN_RECOMENDADO.rango[1] && cfg.secondary === VOLUMEN_RECOMENDADO.secundarios
+  const restablecer = () => editar((d) => {
+    d.volume.ranges[d.volume.mode] = [...VOLUMEN_RECOMENDADO.rango]
+    d.volume.secondary = VOLUMEN_RECOMENDADO.secundarios
+  })
   const grupos = cfg.mode === 'musculo' ? datos.taxonomia.map((g) => ({ ...g, filas: filas.filter((f) => f.grupoId === g.id) })) : null
   const sinMusculos = data.weeks.some((w) => w.days.some((d) => d.entries.some((e) => e.mode === 'sets' && !datos.porId.get(e.exerciseId)?.primary?.length)))
 
@@ -137,6 +142,9 @@ export default function Volumen({ data, editar }) {
               <span className="text-ink-mute">–</span>
               <input inputMode="numeric" className="campo !w-14 text-center tabular !py-1.5" value={rango[1]} onChange={(e) => setRango([rango[0], Number(e.target.value.replace(/\D/g, '')) || 0])} />
               <span className="text-ink-dim">series</span>
+              {!esRecomendado && (
+                <button onClick={restablecer} className="ml-1 text-[12.5px] font-medium text-accent hover:underline">Recomendado</button>
+              )}
             </div>
           </div>
         </div>
@@ -167,6 +175,16 @@ export default function Volumen({ data, editar }) {
         <p className="text-[12.5px] text-ink-mute mt-3 leading-relaxed">
           Cuentan las series efectivas (no las de calentamiento). {cfg.mode === 'grupo' && 'Por grupo, un ejercicio que toca dos músculos del mismo grupo cuenta una sola vez. '}
           {n > 1 && `La cifra grande es la media de las ${n} semanas; a la izquierda, cada semana por separado.`}
+          <span className="block mt-1">
+            Recomendado para hipertrofia: {VOLUMEN_RECOMENDADO.rango[0]}–{VOLUMEN_RECOMENDADO.rango[1]} series efectivas por músculo y semana, secundarios a ½
+            {cfg.mode === 'grupo' && ' (por grupo, un grupo con varios músculos puede necesitar más)'}. Fuentes:{' '}
+            {VOLUMEN_FUENTES.map((f, i) => (
+              <span key={f.cita}>
+                {i > 0 && ' · '}
+                <a href={f.url} target="_blank" rel="noreferrer" title={f.que} className="underline decoration-line underline-offset-2 hover:text-ink-dim">{f.cita}</a>
+              </span>
+            ))}.
+          </span>
           {sinMusculos && <span className="block mt-1 text-warn">Hay ejercicios sin músculos asignados: no suman. Asígnalos en Ejercicios.</span>}
         </p>
       </div>
