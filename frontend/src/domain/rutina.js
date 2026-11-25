@@ -219,16 +219,33 @@ export function etiquetasSuperserie(entries) {
   return out
 }
 
-// Duración aproximada: ~40 s de trabajo por serie + su descanso (el último
-// descanso del día no cuenta) + los minutos de las entradas por tiempo.
+// Duración aproximada de un día, calibrada con sesiones reales (contar solo
+// series + descanso programado se quedaba en la mitad del tiempo real):
+//  · ~45 s de trabajo por serie (8-12 reps controladas + colocarse).
+//  · Descanso programado + ~20 s de margen (cargar discos, apuntar, beber):
+//    el descanso real casi nunca es el del cronómetro. El último del día no cuenta.
+//  · ~3 min por ejercicio (o por superserie entera) para cambiar de máquina,
+//    ajustarla y hacer la aproximación.
+//  · Las entradas por tiempo suman sus minutos tal cual.
+const TRABAJO_SERIE = 45
+const MARGEN_DESCANSO = 20
+const CAMBIO_EJERCICIO = 180
+
 export function duracionDia(dia) {
   let seg = 0
   let ultimoDescanso = 0
+  let enSuperserie = false
   for (const e of dia.entries) {
-    if (e.mode === 'time') { seg += (parseFloat(e.cardio?.duration) || 0) * 60; continue }
+    if (e.mode === 'time') {
+      seg += (parseFloat(e.cardio?.duration) || 0) * 60
+      enSuperserie = false
+      continue
+    }
+    if (!enSuperserie && e.sets.length) seg += CAMBIO_EJERCICIO
+    enSuperserie = !!e.superset
     for (const s of e.sets) {
-      const descanso = e.superset ? 15 : Number(s.rest) || 0
-      seg += 40 + descanso
+      const descanso = e.superset ? 15 : (Number(s.rest) || 0) + MARGEN_DESCANSO
+      seg += TRABAJO_SERIE + descanso
       ultimoDescanso = descanso
     }
   }
