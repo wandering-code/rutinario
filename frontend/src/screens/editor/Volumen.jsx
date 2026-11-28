@@ -193,8 +193,11 @@ export default function Volumen({ data, editar }) {
           {ciencia && (
             <span className="block mt-1">
               Objetivo recomendado por músculo: el rango MAV de las tablas de volumen de Renaissance Periodization (Israetel et al.), en series directas por semana
-              para nivel intermedio; despliega cada fila para ver su fuente, el mínimo eficaz y el máximo recuperable. Al contar los secundarios, músculos como el
-              deltoide anterior o el tríceps suman trabajo indirecto, así que pueden salir algo por encima. Sin cifra específica (espalda, hombros como grupo) se usa
+              para nivel intermedio; despliega cada fila para ver su fuente, el mínimo eficaz y el máximo recuperable.{' '}
+              {cfg.secondary > 0
+                ? 'RP cuenta solo series directas: con los secundarios sumando, músculos como el deltoide anterior o el tríceps suman trabajo indirecto y pueden salir algo por encima (con Secundarios en «No» cuentas igual que RP). '
+                : 'Con Secundarios en «No» cuentas igual que RP (solo series directas). '}
+              Sin cifra específica (espalda, hombros como grupo) se usa
               el rango general de {VOLUMEN_RECOMENDADO.rango[0]}–{VOLUMEN_RECOMENDADO.rango[1]}; los músculos sin dato fiable se quedan sin objetivo.
             </span>
           )}
