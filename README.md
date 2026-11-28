@@ -20,7 +20,8 @@ Instalable como app (PWA) en el móvil y en el ordenador.
   indicaciones, vídeo y **fotos** (del ejercicio o de la máquina: se suben, se arrastran o
   se pegan con ⌘V). Viene con ~70 ejercicios de base.
 - **Contador de series** por grupo muscular o por músculo, por semana y con la media si la
-  rutina rota. Los secundarios cuentan ½ (o 0, o 1), con objetivo semanal coloreado.
+  rutina rota. Los secundarios cuentan ½ (o 0, o 1). Objetivo semanal coloreado **por
+  músculo** (rango MAV de Renaissance Periodization, con la fuente en cada fila) o propio.
 - **Deshacer/rehacer** (⌘Z / ⇧⌘Z) y **guardado automático**. Si la misma rutina se
   edita desde dos dispositivos, avisa en vez de pisar cambios.
 - Copiar/pegar días, copiar un día a varios a la vez, duplicar y archivar rutinas,

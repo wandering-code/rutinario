@@ -1,6 +1,6 @@
 import {
   DIAS, SERIE, TIPO, duracionDia, etiquetasSuperserie, formatoDescanso, formatoMinutos, nombreSemana, resumenEntrada,
-  textoRecuento,
+  objetivoDe, textoRecuento,
 } from '../domain/rutina'
 import { calcularVolumen } from '../domain/volumen'
 import { semanasElegidas } from './comun'
@@ -101,22 +101,22 @@ export async function aExcel(nombre, data, datos, { semanas = 'todas', notas = t
   if (filas.length) {
     const ws = wb.addWorksheet('Series por músculo')
     const n = data.weeks.length
-    ws.columns = [{ width: 24 }, { width: 18 }, ...data.weeks.map(() => ({ width: 11 })), ...(n > 1 ? [{ width: 12 }] : [])]
-    const cab = ws.addRow([data.volume.mode === 'grupo' ? 'Grupo' : 'Músculo', data.volume.mode === 'grupo' ? '' : 'Grupo', ...data.weeks.map((w, i) => nombreSemana(w, i)), ...(n > 1 ? ['Media'] : [])])
+    ws.columns = [{ width: 24 }, { width: 18 }, ...data.weeks.map(() => ({ width: 11 })), ...(n > 1 ? [{ width: 12 }] : []), { width: 12 }]
+    const cab = ws.addRow([data.volume.mode === 'grupo' ? 'Grupo' : 'Músculo', data.volume.mode === 'grupo' ? '' : 'Grupo', ...data.weeks.map((w, i) => nombreSemana(w, i)), ...(n > 1 ? ['Media'] : []), 'Objetivo'])
     cab.eachCell((c) => {
       c.font = { bold: true, color: { argb: 'FFFFFFFF' } }
       c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1C1D1A' } }
     })
-    const [min, max] = data.volume.ranges[data.volume.mode]
     for (const f of filas) {
-      const r = ws.addRow([f.name, data.volume.mode === 'grupo' ? '' : f.grupo, ...f.porSemana, ...(n > 1 ? [Math.round(f.media * 10) / 10] : [])])
+      const obj = objetivoDe(f.id, data.volume)
+      const r = ws.addRow([f.name, data.volume.mode === 'grupo' ? '' : f.grupo, ...f.porSemana, ...(n > 1 ? [Math.round(f.media * 10) / 10] : []), obj ? `${obj.rango[0]}–${obj.rango[1]}` : '—'])
       const v = f.media
-      const color = v < min ? 'FFB7791F' : v > max ? 'FFB3412A' : 'FF3D7A4F'
-      r.getCell(r.cellCount).font = { bold: true, color: { argb: color } }
+      const color = !obj ? 'FF1C1D1A' : v < obj.rango[0] ? 'FFB7791F' : v > obj.rango[1] ? 'FFB3412A' : 'FF3D7A4F'
+      r.getCell(r.cellCount - 1).font = { bold: true, color: { argb: color } }
       r.eachCell({ includeEmpty: true }, (c) => { c.border = bordes })
     }
     ws.addRow([])
-    ws.addRow([`Series efectivas (sin calentamiento). Secundarios cuentan ${data.volume.secondary}. Objetivo: ${min}–${max} series/semana.`]).getCell(1).font = { italic: true, color: { argb: 'FF8A867D' } }
+    ws.addRow([`Series efectivas (sin calentamiento). Secundarios cuentan ${data.volume.secondary}. ${data.volume.objetivo === 'propio' ? 'Objetivo propio.' : 'Objetivo: rango MAV por músculo de Renaissance Periodization (rpstrength.com); espalda y hombros, rango general 10–20.'}`]).getCell(1).font = { italic: true, color: { argb: 'FF8A867D' } }
   }
 
   // Detalle serie a serie, para las entradas que lo tienen.

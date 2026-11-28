@@ -4,26 +4,33 @@ import { Icon } from '../../ui/icons'
 import { Segmentado, SUAVE, Etiqueta } from '../../ui/piezas'
 import { useDatos } from '../../platform/datos'
 import { calcularVolumen, redondear } from '../../domain/volumen'
-import { TIPO, TIPOS_DIA, VOLUMEN_FUENTES, VOLUMEN_RECOMENDADO, duracionDia, esEntreno, formatoMinutos, nombreSemana, recuentoTipos, seriesDia } from '../../domain/rutina'
+import { TIPO, TIPOS_DIA, VOLUMEN_FUENTES, VOLUMEN_RECOMENDADO, duracionDia, objetivoDe, esEntreno, formatoMinutos, nombreSemana, recuentoTipos, seriesDia } from '../../domain/rutina'
 
-function color(v, [min, max]) {
+function color(v, rango) {
   if (!v) return 'var(--color-line)'
+  if (!rango) return 'var(--color-ink-mute)'
+  const [min, max] = rango
   if (v < min) return 'var(--color-warn)'
   if (v > max) return 'var(--color-danger)'
   return 'var(--color-ok)'
 }
 
-function Fila({ f, rango, escala, semanas, abierta, onToggle }) {
+function Fila({ f, objetivo, escala, semanas, abierta, onToggle }) {
   const v = f.media
+  const rango = objetivo?.rango
   const ancho = Math.min(100, (v / escala) * 100)
+  const desplegable = f.ejercicios.length > 0 || objetivo?.fuente
   return (
     <div className="border-b border-line/60 last:border-0">
       <button onClick={onToggle} className="w-full grid grid-cols-[minmax(90px,170px)_1fr_auto] items-center gap-3 sm:gap-4 py-2.5 text-left group">
-        <span className={`text-[13.5px] truncate ${v ? 'font-medium' : 'text-ink-mute'}`}>{f.name}</span>
+        <span className="min-w-0">
+          <span className={`block text-[13.5px] truncate ${v ? 'font-medium' : 'text-ink-mute'}`}>{f.name}</span>
+          <span className="block text-[11px] text-ink-mute tabular">{rango ? `objetivo ${rango[0]}–${rango[1]}` : 'sin objetivo'}</span>
+        </span>
         <div className="relative h-6 rounded-lg bg-surface-2/40 overflow-hidden">
           {/* Franja del objetivo */}
-          <div className="absolute inset-y-0 bg-ok/10 border-x border-ok/25"
-            style={{ left: `${(rango[0] / escala) * 100}%`, width: `${((rango[1] - rango[0]) / escala) * 100}%` }} />
+          {rango && <div className="absolute inset-y-0 bg-ok/10 border-x border-ok/25"
+            style={{ left: `${(rango[0] / escala) * 100}%`, width: `${((rango[1] - rango[0]) / escala) * 100}%` }} />}
           <motion.div
             className="absolute inset-y-1 left-1 rounded-md"
             initial={false}
@@ -39,11 +46,11 @@ function Fila({ f, rango, escala, semanas, abierta, onToggle }) {
             </span>
           )}
           <span className="w-10 text-right text-[15px] font-semibold">{redondear(Math.round(v * 10) / 10)}</span>
-          <Icon name="chevD" size={14} className={`text-ink-mute transition-transform duration-300 ${abierta ? 'rotate-180' : ''} ${f.ejercicios.length ? '' : 'invisible'}`} />
+          <Icon name="chevD" size={14} className={`text-ink-mute transition-transform duration-300 ${abierta ? 'rotate-180' : ''} ${desplegable ? '' : 'invisible'}`} />
         </div>
       </button>
       <AnimatePresence initial={false}>
-        {abierta && f.ejercicios.length > 0 && (
+        {abierta && desplegable && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.28, ease: SUAVE }} className="overflow-hidden">
             <div className="pb-3 pl-2 sm:pl-[186px] space-y-1">
               {f.ejercicios.map((e) => (
@@ -54,6 +61,14 @@ function Fila({ f, rango, escala, semanas, abierta, onToggle }) {
                 </div>
               ))}
               {f.frecuencia > 0 && <div className="text-[12px] text-ink-mute pt-1">Frecuencia: {redondear(Math.round(f.frecuencia * 10) / 10)} {f.frecuencia === 1 ? 'día' : 'días'} por semana</div>}
+              {objetivo?.fuente && (
+                <div className="text-[12px] text-ink-mute pt-1 leading-relaxed">
+                  {objetivo.general
+                    ? <>Objetivo {rango[0]}–{rango[1]}: rango general por músculo (sin cifra específica para este grupo). </>
+                    : <>Objetivo {rango[0]}–{rango[1]} series directas/semana (MAV, donde más se crece) · mínimo eficaz {objetivo.mev} · máximo recuperable {objetivo.mrv}. </>}
+                  Fuente: <a href={objetivo.fuente.url} target="_blank" rel="noreferrer" className="underline decoration-line underline-offset-2 hover:text-ink-dim">{objetivo.fuente.cita}</a>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -79,7 +94,8 @@ export default function Volumen({ data, editar }) {
   const filas = useMemo(() => calcularVolumen(data, datos, cfg), [data, datos, cfg])
   const n = data.weeks.length
   const rango = cfg.ranges[cfg.mode]
-  const escala = Math.max(rango[1] * 1.3, ...filas.map((f) => f.media), 1)
+  const objetivos = useMemo(() => new Map(filas.map((f) => [f.id, objetivoDe(f.id, cfg)])), [filas, cfg])
+  const escala = Math.max(...[...objetivos.values()].map((o) => (o ? o.rango[1] * 1.3 : 0)), ...filas.map((f) => f.media), 1)
 
   const resumen = useMemo(() => {
     let series = 0, min = 0, cardio = 0
@@ -97,11 +113,7 @@ export default function Volumen({ data, editar }) {
 
   const setCfg = (k, v) => editar((d) => { d.volume[k] = v })
   const setRango = (r) => editar((d) => { d.volume.ranges[d.volume.mode] = r }, 'rango')
-  const esRecomendado = rango[0] === VOLUMEN_RECOMENDADO.rango[0] && rango[1] === VOLUMEN_RECOMENDADO.rango[1] && cfg.secondary === VOLUMEN_RECOMENDADO.secundarios
-  const restablecer = () => editar((d) => {
-    d.volume.ranges[d.volume.mode] = [...VOLUMEN_RECOMENDADO.rango]
-    d.volume.secondary = VOLUMEN_RECOMENDADO.secundarios
-  })
+  const ciencia = cfg.objetivo !== 'propio'
   const grupos = cfg.mode === 'musculo' ? datos.taxonomia.map((g) => ({ ...g, filas: filas.filter((f) => f.grupoId === g.id) })) : null
   const sinMusculos = data.weeks.some((w) => w.days.some((d) => d.entries.some((e) => e.mode === 'sets' && !datos.porId.get(e.exerciseId)?.primary?.length)))
 
@@ -136,17 +148,20 @@ export default function Volumen({ data, editar }) {
             <Segmentado opciones={[{ id: 0, name: 'No' }, { id: 0.5, name: '½' }, { id: 1, name: '1' }]} valor={cfg.secondary} onChange={(v) => setCfg('secondary', v)} />
           </div>
           <div>
-            <Etiqueta>Objetivo semanal {cfg.mode === 'grupo' ? 'por grupo' : 'por músculo'}</Etiqueta>
+            <Etiqueta>Objetivo semanal</Etiqueta>
+            <Segmentado opciones={[{ id: 'ciencia', name: 'Recomendado' }, { id: 'propio', name: 'Propio' }]} valor={ciencia ? 'ciencia' : 'propio'} onChange={(v) => setCfg('objetivo', v)} />
+          </div>
+          {!ciencia && (
+          <div>
+            <Etiqueta>Rango propio {cfg.mode === 'grupo' ? 'por grupo' : 'por músculo'}</Etiqueta>
             <div className="flex items-center gap-2 text-sm">
               <input inputMode="numeric" className="campo !w-14 text-center tabular !py-1.5" value={rango[0]} onChange={(e) => setRango([Number(e.target.value.replace(/\D/g, '')) || 0, rango[1]])} />
               <span className="text-ink-mute">–</span>
               <input inputMode="numeric" className="campo !w-14 text-center tabular !py-1.5" value={rango[1]} onChange={(e) => setRango([rango[0], Number(e.target.value.replace(/\D/g, '')) || 0])} />
               <span className="text-ink-dim">series</span>
-              {!esRecomendado && (
-                <button onClick={restablecer} className="ml-1 text-[12.5px] font-medium text-accent hover:underline">Recomendado</button>
-              )}
             </div>
           </div>
+          )}
         </div>
 
         <div className="rounded-xl3 bg-surface border border-line/70 sombra-1 px-4 sm:px-5 py-2">
@@ -166,18 +181,25 @@ export default function Volumen({ data, editar }) {
           {grupos ? grupos.map((g) => (
             <div key={g.id} className="pt-3">
               {!(g.filas.length === 1 && g.filas[0].name === g.name) && <div className="text-[12px] font-semibold text-ink-dim">{g.name}</div>}
-              {g.filas.map((f) => <Fila key={f.id} f={f} rango={rango} escala={escala} semanas={n} abierta={abierta === f.id} onToggle={() => setAbierta(abierta === f.id ? null : f.id)} />)}
+              {g.filas.map((f) => <Fila key={f.id} f={f} objetivo={objetivos.get(f.id)} escala={escala} semanas={n} abierta={abierta === f.id} onToggle={() => setAbierta(abierta === f.id ? null : f.id)} />)}
             </div>
           )) : filas.map((f) => (
-            <Fila key={f.id} f={f} rango={rango} escala={escala} semanas={n} abierta={abierta === f.id} onToggle={() => setAbierta(abierta === f.id ? null : f.id)} />
+            <Fila key={f.id} f={f} objetivo={objetivos.get(f.id)} escala={escala} semanas={n} abierta={abierta === f.id} onToggle={() => setAbierta(abierta === f.id ? null : f.id)} />
           ))}
         </div>
         <p className="text-[12.5px] text-ink-mute mt-3 leading-relaxed">
           Cuentan las series efectivas (no las de calentamiento). {cfg.mode === 'grupo' && 'Por grupo, un ejercicio que toca dos músculos del mismo grupo cuenta una sola vez. '}
           {n > 1 && `La cifra grande es la media de las ${n} semanas; a la izquierda, cada semana por separado.`}
+          {ciencia && (
+            <span className="block mt-1">
+              Objetivo recomendado por músculo: el rango MAV de las tablas de volumen de Renaissance Periodization (Israetel et al.), en series directas por semana
+              para nivel intermedio; despliega cada fila para ver su fuente, el mínimo eficaz y el máximo recuperable. Al contar los secundarios, músculos como el
+              deltoide anterior o el tríceps suman trabajo indirecto, así que pueden salir algo por encima. Sin cifra específica (espalda, hombros como grupo) se usa
+              el rango general de {VOLUMEN_RECOMENDADO.rango[0]}–{VOLUMEN_RECOMENDADO.rango[1]}; los músculos sin dato fiable se quedan sin objetivo.
+            </span>
+          )}
           <span className="block mt-1">
-            Recomendado para hipertrofia: {VOLUMEN_RECOMENDADO.rango[0]}–{VOLUMEN_RECOMENDADO.rango[1]} series efectivas por músculo y semana, secundarios a ½
-            {cfg.mode === 'grupo' && ' (por grupo, un grupo con varios músculos puede necesitar más)'}. Fuentes:{' '}
+            Rango general para hipertrofia: {VOLUMEN_RECOMENDADO.rango[0]}–{VOLUMEN_RECOMENDADO.rango[1]} series efectivas por músculo y semana, secundarios a ½. Fuentes:{' '}
             {VOLUMEN_FUENTES.map((f, i) => (
               <span key={f.cita}>
                 {i > 0 && ' · '}

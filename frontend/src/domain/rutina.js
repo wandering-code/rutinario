@@ -3,7 +3,8 @@
 // rutina.data = {
 //   description, goal,
 //   weeks: [{ id, label, days: [día × 7, de lunes a domingo] }],
-//   volume: { mode: 'grupo'|'musculo', secondary: 0.5, ranges: { grupo: [min, max], musculo: [min, max] } },
+//   volume: { mode: 'grupo'|'musculo', secondary: 0.5, objetivo: 'ciencia'|'propio',
+//             ranges: { grupo: [min, max], musculo: [min, max] } },   // ranges: solo con objetivo 'propio'
 // }
 // día   = { id, type, title, notes, entries: [entrada] }
 // entrada = { id, exerciseId, name, mode: 'sets'|'time', detailed,
@@ -94,12 +95,60 @@ export const VOLUMEN_FUENTES = [
   { cita: 'Pelland et al. 2026', que: 'contar los secundarios como ½ serie; más volumen sigue sumando, cada vez menos', url: 'https://doi.org/10.1007/s40279-025-02344-w' },
 ]
 
+// Objetivo por músculo: rango MAV («volumen adaptativo máximo», donde se crece
+// más) de las tablas de Renaissance Periodization (Israetel et al.), en series
+// directas por semana, para un programa de cuerpo entero y nivel intermedio.
+// También se guardan MEV (mínimo eficaz) y MRV (máximo recuperable) para
+// mostrarlos. RP no da cifra legible para espalda (la tabla es una imagen) ni
+// para pectoral superior, lumbar, aductores, abductores u oblicuos: espalda y
+// hombros (grupo) usan el rango general de los metaanálisis, y el resto se
+// queda sin objetivo en vez de inventarlo.
+const rp = (nombre, slug, mev, mav, mrv) => ({
+  rango: mav, mev, mrv,
+  fuente: { cita: `RP · ${nombre}`, url: `https://rpstrength.com/blogs/articles/${slug}` },
+})
+const RP = {
+  pecho: rp('Pecho', 'chest-hypertrophy-training-tips', '4-6', [6, 16], '16-24'),
+  trapecio: rp('Trapecio', 'trap-hypertrophy-training-tips', '0-4', [4, 12], '12-20'),
+  deltAnt: rp('Deltoide anterior', 'front-delt-hypertrophy-training-tips', '0-2', [4, 8], '8-12'),
+  deltLat: rp('Deltoide lateral', 'side-delt-hypertrophy-training-tips', '6-8', [8, 24], '24-30'),
+  deltPost: rp('Deltoide posterior', 'rear-delt-hypertrophy-training-tips', '0-4', [4, 12], '12-20'),
+  biceps: rp('Bíceps', 'bicep-hypertrophy-training-tips', '8-10', [14, 20], '20-26'),
+  triceps: rp('Tríceps', 'triceps-hypertrophy-training-tips', '4-6', [6, 16], '16-20'),
+  antebrazo: rp('Antebrazo', 'forearm-hypertrophy-training-tips', '0-8', [8, 24], '24-30'),
+  cuadriceps: rp('Cuádriceps', 'quad-hypertrophy-training-tips', '4-6', [6, 14], '14-18'),
+  isquios: rp('Isquiotibiales', 'hamstring-hypertrophy-training-tips', '2-4', [2, 8], '8-14'),
+  gluteos: rp('Glúteos', 'glute-hypertrophy-training-tips', '6-8', [8, 24], '24-30'),
+  gemelos: rp('Gemelos', 'calves-hypertrophy-training-tips', '4-6', [6, 16], '16-24'),
+  abdomen: rp('Abdomen', 'ab-hypertrophy-training-tips', '0-4', [4, 12], '12-20'),
+}
+const GENERAL = { rango: VOLUMEN_RECOMENDADO.rango, general: true, fuente: { cita: 'Rango general (metaanálisis)', url: VOLUMEN_FUENTES[1].url } }
+// Por id de músculo o de grupo (los de la taxonomía por defecto; si se crean
+// otros en Ajustes, se quedan sin objetivo recomendado).
+export const VOLUMEN_POR_ID = {
+  // músculos
+  pectoral: RP.pecho, dorsal: GENERAL, 'espalda-media': GENERAL, trapecio: RP.trapecio,
+  'delt-ant': RP.deltAnt, 'delt-lat': RP.deltLat, 'delt-post': RP.deltPost,
+  biceps: RP.biceps, triceps: RP.triceps, antebrazo: RP.antebrazo,
+  cuadriceps: RP.cuadriceps, isquios: RP.isquios, gluteos: RP.gluteos, gemelos: RP.gemelos, abdomen: RP.abdomen,
+  // grupos
+  pecho: RP.pecho, espalda: GENERAL, hombros: GENERAL,
+  'g-biceps': RP.biceps, 'g-triceps': RP.triceps, 'g-antebrazo': RP.antebrazo,
+  'g-cuadriceps': RP.cuadriceps, 'g-isquios': RP.isquios, 'g-gluteos': RP.gluteos, 'g-gemelos': RP.gemelos, core: RP.abdomen,
+}
+
+// Objetivo de una fila del contador: { rango, fuente?, mev?, mrv? } o null.
+export function objetivoDe(id, cfg) {
+  if (cfg.objetivo === 'propio') return { rango: cfg.ranges[cfg.mode] }
+  return VOLUMEN_POR_ID[id] || null
+}
+
 export function nuevaRutina({ weeks = 1, patron } = {}) {
   return {
     description: '',
     goal: '',
     weeks: Array.from({ length: weeks }, () => nuevaSemana(patron)),
-    volume: { mode: 'grupo', secondary: VOLUMEN_RECOMENDADO.secundarios, ranges: { grupo: [...VOLUMEN_RECOMENDADO.rango], musculo: [...VOLUMEN_RECOMENDADO.rango] } },
+    volume: { mode: 'grupo', secondary: VOLUMEN_RECOMENDADO.secundarios, objetivo: 'ciencia', ranges: { grupo: [...VOLUMEN_RECOMENDADO.rango], musculo: [...VOLUMEN_RECOMENDADO.rango] } },
   }
 }
 
@@ -121,7 +170,7 @@ export function clonar(obj) {
 // JSON importado: esto rellena lo que falte sin perder nada.
 export function normalizar(data) {
   const d = { ...nuevaRutina({ weeks: 0 }), ...(data || {}) }
-  d.volume = { mode: 'grupo', secondary: VOLUMEN_RECOMENDADO.secundarios, ...(data?.volume || {}) }
+  d.volume = { mode: 'grupo', secondary: VOLUMEN_RECOMENDADO.secundarios, objetivo: 'ciencia', ...(data?.volume || {}) }
   // Un objetivo por modo: 10-20 series tiene sentido por músculo, no por grupo.
   d.volume.ranges = { grupo: [...VOLUMEN_RECOMENDADO.rango], musculo: [...VOLUMEN_RECOMENDADO.rango], ...(d.volume.ranges || {}) }
   delete d.volume.range
